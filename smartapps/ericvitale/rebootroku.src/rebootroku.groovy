@@ -4,6 +4,9 @@
  *  Version 1.0.0 - 08/12/16
  *   -- Initial Build
  *
+ *  Tips
+ *  1. You need to use the ip address of your roku(s), so you might want to make them static ip assignments in your router.
+ *  2. You can customize keypresses to match your roku, make sure you start with home,home to ensure you are starting from the correct place.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -58,7 +61,7 @@ def childStartPage() {
     	section("Roku") {
             input "roku", "text", title: "Roku IP:", required: true
             input "rokuKeys", "text", title: "Reset Keystrokes", required: true, defaultValue: "home,home,up,right,up,right,up,up,up,up,right,select"
-            input "keyWait", "number", title: "Time Between Keypress (ms)", required: true, defaultValue: 500, range: "0..5000",  description: "Can't be too short as the commands could get out of sync, too long and you will timeout the SmartApp."
+            input "keyWait", "number", title: "Time Between Keypress (ms)", required: true, defaultValue: 500, range: "250..5000",  description: "Can't be too short as the commands could get out of sync, too long and you will timeout the SmartApp."
     	}
         
         section("Trigger") {
@@ -70,7 +73,7 @@ def childStartPage() {
             input "hour", "text", title: "Hour of the Day", required: true, defaultValue: "2", range: "0..23"
             input "minute", "text", title: "Minute of the Hour", required: true, defaultValue: "0", range: "0..59"
             input "active", "bool", title: "Rules Active?", required: true, defaultValue: true
-            input "logging", "enum", title: "Log Level", required: true, defaultValue: "DEBUG", options: ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]
+            input "logging", "enum", title: "Log Level", required: true, defaultValue: "INFO", options: ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]
         }
 	}
 }
