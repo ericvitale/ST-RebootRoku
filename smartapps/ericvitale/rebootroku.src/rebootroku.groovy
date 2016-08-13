@@ -146,7 +146,7 @@ def updated() {
 }
 
 def initialization() {
-	log.debug "Begin initialization()."
+	log("Begin initialization().", "DEBUG")
     
     if(parent) { 
     	initChild() 
@@ -154,11 +154,11 @@ def initialization() {
     	initParent() 
     }
     
-    log.debug "End initialization()."
+    log("End initialization().", "DEBUG")
 }
 
 def initParent() {
-	log.debug "initParent()"
+	log("initParent()", "DEBUG")
 }
 
 def initChild() {
