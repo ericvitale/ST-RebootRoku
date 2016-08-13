@@ -1,0 +1,230 @@
+/**
+ *  RebuRoku
+ *
+ *  Version 1.0.0 - 08/12/16
+ *   -- Initial Build
+ *
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License. You may obtain a copy of the License at:
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
+ *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
+ *  for the specific language governing permissions and limitations under the License.
+ *
+ *  You can find this smart app @ https://github.com/ericvitale/ST-RebootRoku
+ *  You can find my other device handlers & SmartApps @ https://github.com/ericvitale
+ *
+ */
+ 
+definition(
+    name: "${appName()}",
+    namespace: "ericvitale",
+    author: "Eric Vitale",
+    description: "Reboots your roku(s).",
+    category: "",
+    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
+    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
+
+
+preferences {
+    page(name: "startPage")
+    page(name: "parentPage")
+    page(name: "childStartPage")
+}
+
+def startPage() {
+    if (parent) {
+        childStartPage()
+    } else {
+        parentPage()
+    }
+}
+
+def parentPage() {
+	return dynamicPage(name: "parentPage", title: "", nextPage: "", install: false, uninstall: true) {
+        section("Create a new child app.") {
+            app(name: "childApps", appName: appName(), namespace: "ericvitale", title: "New Roku Automation", multiple: true)
+        }
+    }
+}
+ 
+def childStartPage() {
+	return dynamicPage(name: "childStartPage", title: "", install: true, uninstall: true) {
+    
+    	section("Roku") {
+            input "roku", "text", title: "Roku IP:", required: true
+            input "rokuKeys", "text", title: "Reset Keystrokes", required: true, defaultValue: "home,home,up,right,up,right,up,up,up,up,right,select"
+            input "keyWait", "number", title: "Time Between Keypress (ms)", required: true, defaultValue: 500, range: "0..5000",  description: "Can't be too short as the commands could get out of sync, too long and you will timeout the SmartApp."
+    	}
+        
+        section("Trigger") {
+        	input "switches", "capability.switch", title: "Switches", multiple: true, required: false, description: "Only needed for testing."
+        }
+        
+        section("Setting") {
+        	label(title: "Assign a name", required: false)
+            input "hour", "text", title: "Hour of the Day", required: true, defaultValue: "2", range: "0..23"
+            input "minute", "text", title: "Minute of the Hour", required: true, defaultValue: "0", range: "0..59"
+            input "active", "bool", title: "Rules Active?", required: true, defaultValue: true
+            input "logging", "enum", title: "Log Level", required: true, defaultValue: "DEBUG", options: ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]
+        }
+	}
+}
+
+private def appName() { return "${parent ? "Roku Automation" : "RebootRoku"}" }
+
+private determineLogLevel(data) {
+    switch (data?.toUpperCase()) {
+        case "TRACE":
+            return 0
+            break
+        case "DEBUG":
+            return 1
+            break
+        case "INFO":
+            return 2
+            break
+        case "WARN":
+            return 3
+            break
+        case "ERROR":
+        	return 4
+            break
+        default:
+            return 1
+    }
+}
+
+def log(data, type) {
+    data = "RR -- ${data ?: ''}"
+        
+    if (determineLogLevel(type) >= determineLogLevel(settings?.logging ?: "INFO")) {
+        switch (type?.toUpperCase()) {
+            case "TRACE":
+                log.trace "${data}"
+                break
+            case "DEBUG":
+                log.debug "${data}"
+                break
+            case "INFO":
+                log.info "${data}"
+                break
+            case "WARN":
+                log.warn "${data}"
+                break
+            case "ERROR":
+                log.error "${data}"
+                break
+            default:
+                log.error "RR -- Invalid Log Setting"
+        }
+    }
+}
+
+def installed() {
+	log("Begin installed.", "DEBUG")
+	initialization() 
+    log("End installed.", "DEBUG")
+}
+
+def updated() {
+	log("Begin updated().", "DEBUG")
+	unsubscribe()
+    unschedule()
+	initialization()
+    log("End updated().", "DEBUG")
+}
+
+def initialization() {
+	log.debug "Begin initialization()."
+    
+    if(parent) { 
+    	initChild() 
+    } else {
+    	initParent() 
+    }
+    
+    log.debug "End initialization()."
+}
+
+def initParent() {
+	log.debug "initParent()"
+}
+
+def initChild() {
+	log("Begin intialization().", "DEBUG")
+    
+    log("active = ${active}.", "INFO")
+    
+    unschedule()
+    unsubscribe()
+    
+    if(active) {
+    	schedule("44 ${minute} ${hour} 1/1 * ? *", rebootRokus)
+        subscribe(switches, "switch", switchHandler)
+        log("Subscriptions to devices made.", "INFO")   
+    } else {
+    	log("App is set to inactive in settings.", "INFO")
+    }
+    
+    log("Roku = ${roku}", "INFO")
+    log("Roku Reboot Keys = ${rokuKeys}.", "INFO")
+    log("Time between keypresses: ${keyWait}.", "INFO")
+
+    log("End initialization().", "DEBUG")
+}
+
+def switchHandler(evt) {
+	log("Manual Trigger!", "INFO")
+    rebootRokus()
+}
+
+def rebootRokus() {
+	runIn(1, scheduleReboot)
+    log("Scheduled reboot for roku ip: ${roku}.", "INFO")
+}
+
+def sendRebootToRoku() {
+	log("sendRebootToRoku(${roku}, ${rokuKeys}.", "INFO")
+    
+	if(roku != null) {        
+
+		def keyMap = [:]        
+        log("Keys = ${rokuKeys}.", "DEBUG")        
+        keyMap = rokuKeys.split(",")
+        
+        log("Key map to be sent = ${keyMap}.", "DEBUG")
+        log("Preparing to reboot Roku ${roku}.", "INFO")
+        
+        keyMap.each { key->
+        	sendKeyPressToRoku(roku, key)
+            pause(500)
+        }
+    } else {
+    	log("No roku selected", "ERROR")
+    }
+}
+
+def scheduleReboot() {
+    log("Running Reboot for roku ip: ${roku}.", "DEBUG")
+    sendRebootToRoku()
+}
+
+def sendKeyPressToRoku(ip, key) {
+	log("ip = ${ip} & key = ${key}.", "DEBUG")
+    def httpRequest = [
+    	method:		"POST",
+        path: 		"/keypress/${key}",
+        headers: [
+                 	HOST:		"${ip}:8060",
+                    Accept: 	"*/*",
+                 ]
+    ]
+
+    def hubAction = new physicalgraph.device.HubAction(httpRequest)
+    sendHubCommand(hubAction)
+}
