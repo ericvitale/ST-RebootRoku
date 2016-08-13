@@ -1,5 +1,5 @@
 /**
- *  RebuRoku
+ *  RebootRoku
  *
  *  Version 1.0.0 - 08/12/16
  *   -- Initial Build
