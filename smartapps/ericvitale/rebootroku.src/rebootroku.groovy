@@ -1,6 +1,8 @@
 /**
  *  RebootRoku
  *
+ *  Version 1.0.1 - 08/13/16
+ *   -- Added the ability to select a day of the week or multiple. 
  *  Version 1.0.0 - 08/12/16
  *   -- Initial Build
  *
@@ -72,6 +74,7 @@ def childStartPage() {
         	label(title: "Assign a name", required: false)
             input "hour", "text", title: "Hour of the Day", required: true, defaultValue: "2", range: "0..23"
             input "minute", "text", title: "Minute of the Hour", required: true, defaultValue: "0", range: "0..59"
+            input "daysOfWeek", "enum", title: "Specific Day(s) of the Week", required: false, multiple: true, options: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             input "active", "bool", title: "Rules Active?", required: true, defaultValue: true
             input "logging", "enum", title: "Log Level", required: true, defaultValue: "INFO", options: ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]
         }
@@ -166,8 +169,14 @@ def initChild() {
     unschedule()
     unsubscribe()
     
+    def days = buildDayOfWeekString()
+    
+    log("Schedule will be active on days: ${days}.", "INFO")
+    log("Schedule will be active on hour ${hour} and minute ${minute}.", "INFO")
+    
     if(active) {
-    	schedule("44 ${minute} ${hour} 1/1 * ? *", rebootRokus)
+        log("CRON = <<<44 ${minute} ${hour} ? * ${days}>>>", "DEBUG")
+        schedule("44 ${minute} ${hour} ? * ${days}", rebootRokus)
         subscribe(switches, "switch", switchHandler)
         log("Subscriptions to devices made.", "INFO")   
     } else {
@@ -230,4 +239,23 @@ def sendKeyPressToRoku(ip, key) {
 
     def hubAction = new physicalgraph.device.HubAction(httpRequest)
     sendHubCommand(hubAction)
+}
+
+def buildDayOfWeekString() {
+	def days = ""
+    
+    daysOfWeek.each { it->
+    	log("Day: ${it}", "DEBUG")
+    	days += it.substring(0, 3).toUpperCase().trim()
+        days += ","
+        log("Days = ${days}.", "DEBUG")
+    }
+    
+    if(days == "") {
+    	days = "*"
+    } else {
+    	days = days?.substring(0, days?.length() - 1)
+    }
+    
+    return days
 }
