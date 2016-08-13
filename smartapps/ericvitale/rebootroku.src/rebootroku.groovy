@@ -28,9 +28,9 @@ definition(
     author: "Eric Vitale",
     description: "Reboots your roku(s).",
     category: "",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png")
+    iconUrl: "https://raw.githubusercontent.com/ericvitale/Resources/master/reboot-roku-icon.png",
+    iconX2Url: "https://raw.githubusercontent.com/ericvitale/Resources/master/reboot-roku-icon-2x.png",
+    icon3xUrl: "https://raw.githubusercontent.com/ericvitale/Resources/master/roboot-roku-icon-3x.png")
 
 
 preferences {
@@ -60,7 +60,7 @@ def childStartPage() {
     
     	section("Roku") {
             input "roku", "text", title: "Roku IP:", required: true
-            input "rokuKeys", "text", title: "Reset Keystrokes", required: true, defaultValue: "home,home,up,right,up,right,up,up,up,up,right,select"
+            input "rokuKeys", "text", title: "Reset Keystrokes", required: true, defaultValue: "home,left,home,up,right,up,right,up,up,up,up,right,select"
             input "keyWait", "number", title: "Time Between Keypress (ms)", required: true, defaultValue: 500, range: "250..5000",  description: "Can't be too short as the commands could get out of sync, too long and you will timeout the SmartApp."
     	}
         
