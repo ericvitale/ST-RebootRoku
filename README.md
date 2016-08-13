@@ -1,7 +1,7 @@
 # ST-RebootRoku
 
 ## Summary
-SmartApp to reboot your roku(s).
+SmartThings SmartApp to setup your rokus to reboot on a schedule.
 
 ## Installation via GitHub Integration
 1. Open SmartThings IDE in your web browser and log into your account.
