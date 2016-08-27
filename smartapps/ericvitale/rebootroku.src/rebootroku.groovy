@@ -1,6 +1,8 @@
 /**
  *  RebootRoku
  *
+ *  Version 1.0.2 - 08/26/16
+ *   -- Added app touch to reboot all of your rokus at once.
  *  Version 1.0.1 - 08/13/16
  *   -- Added the ability to select a day of the week or multiple. 
  *  Version 1.0.0 - 08/12/16
@@ -30,10 +32,10 @@ definition(
     author: "Eric Vitale",
     description: "Reboots your roku(s).",
     category: "",
-    iconUrl: "https://raw.githubusercontent.com/ericvitale/Resources/master/reboot-roku-icon.png",
-    iconX2Url: "https://raw.githubusercontent.com/ericvitale/Resources/master/reboot-roku-icon-2x.png",
-    icon3xUrl: "https://raw.githubusercontent.com/ericvitale/Resources/master/roboot-roku-icon-3x.png")
-
+    singleInstance: true,
+    iconUrl: "https://s3.amazonaws.com/ev-public/st-images/reboot-roku-icon.png", 
+    iconX2Url: "https://s3.amazonaws.com/ev-public/st-images/reboot-roku-icon-2x.png", 
+    iconX3Url: "https://s3.amazonaws.com/ev-public/st-images/reboot-roku-icon-3x.png")
 
 preferences {
     page(name: "startPage")
@@ -50,9 +52,14 @@ def startPage() {
 }
 
 def parentPage() {
-	return dynamicPage(name: "parentPage", title: "", nextPage: "", install: false, uninstall: true) {
+	return dynamicPage(name: "parentPage", title: "", nextPage: "", install: true, uninstall: true) {
         section("Create a new child app.") {
             app(name: "childApps", appName: appName(), namespace: "ericvitale", title: "New Roku Automation", multiple: true)
+        }
+        
+        section("Settings") {
+        	input "logging", "enum", title: "Log Level", required: true, defaultValue: "INFO", options: ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]
+            input "appTouch", "bool", title: "Enable App Touch?", required: true, defaultValue: true
         }
     }
 }
@@ -159,6 +166,13 @@ def initialization() {
 
 def initParent() {
 	log("initParent()", "DEBUG")
+    
+    unsubscribe()
+    
+    if(appTouch) {
+	    subscribe(app, appHandler)
+        log("App touch enabled.", "INFO")
+    }
 }
 
 def initChild() {
@@ -188,6 +202,18 @@ def initChild() {
     log("Time between keypresses: ${keyWait}.", "INFO")
 
     log("End initialization().", "DEBUG")
+}
+
+def appHandler(evt) {
+    log("App Touch Event Triggered.", "INFO")
+    childApps.each {child ->
+        if(child.isActive()) {
+        	log("child app: ${child.label} is active, sending reboot request.", "INFO")
+            child.rebootRokus()
+        } else {
+			log("child app: ${child.label} is not active.", "INFO")
+		}
+    }
 }
 
 def switchHandler(evt) {
@@ -258,4 +284,8 @@ def buildDayOfWeekString() {
     }
     
     return days
+}
+
+def isActive() {
+	return active
 }
